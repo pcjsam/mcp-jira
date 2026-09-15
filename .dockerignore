@@ -1,0 +1,9 @@
+node_modules
+src
+.env
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+tsconfig.json
