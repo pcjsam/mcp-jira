@@ -133,7 +133,26 @@ src/
 ├── jira.ts     REST v3 + Agile 1.0 client, basic auth, error flattening, user resolution
 ├── format.ts   compact issue rows / detail view (field allow-lists)
 └── adf.ts      text ⇄ Atlassian Document Format
+test/
+├── adf.test.ts     parser + renderer, every node type, round trips
+└── format.test.ts  row / detail flattening, defaults, comment windowing
 ```
+
+## Tests
+
+Unit tests cover the two pure modules, `adf.ts` and `format.ts`. The client and tool
+handlers are thin glue over the network and are not unit-tested.
+
+```
+npm test               # run the suite
+npm run test:coverage  # with coverage (thresholds enforced in jest.config.js)
+npm run typecheck:test # type-check the tests (Jest strips types, it does not check them)
+```
+
+Jest runs the TypeScript sources directly through `@swc/jest`. Imports name `.js` files
+(nodenext convention); `moduleNameMapper` in `jest.config.js` strips the suffix so Jest
+resolves the `.ts` source. The `--experimental-vm-modules` flag in the scripts is what lets
+Jest load native ESM.
 
 ## Jira API notes
 

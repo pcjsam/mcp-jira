@@ -177,7 +177,7 @@ function render(node: AdfNode, depth: number, index?: number): string {
     case "table":
       return children("") + "\n";
     case "tableRow":
-      return "| " + (node.content ?? []).map((c) => render(c, depth).trim().replace(/\n/g, " ")).join(" | ") + " |\n";
+      return "| " + (node.content ?? []).map((c) => render(c, depth).trim().replace(/\s*\n\s*/g, " ")).join(" | ") + " |\n";
     case "tableHeader":
     case "tableCell":
       return children(" ");
@@ -196,7 +196,7 @@ function render(node: AdfNode, depth: number, index?: number): string {
 function renderListItem(li: AdfNode, depth: number, bullet: string): string {
   const indent = "  ".repeat(depth);
   const parts = (li.content ?? []).map((c) => {
-    if (c.type === "bulletList" || c.type === "orderedList") return render(c, depth + 1);
+    if (c.type === "bulletList" || c.type === "orderedList") return render(c, depth + 1).trimEnd() + "\n";
     return render(c, depth).trimEnd();
   });
   const [first, ...rest] = parts;

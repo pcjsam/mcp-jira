@@ -67,7 +67,7 @@ export function issueRow(jira: JiraClient, issue: Issue): IssueRow {
 export function issueDetail(jira: JiraClient, issue: Issue, commentLimit: number) {
   const f = issue.fields ?? {};
   const comments: any[] = f.comment?.comments ?? [];
-  const shown = comments.slice(-commentLimit);
+  const shown = commentLimit > 0 ? comments.slice(-commentLimit) : [];
   return {
     ...issueRow(jira, issue),
     assignee_account_id: f.assignee?.accountId ?? null,
