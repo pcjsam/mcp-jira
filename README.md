@@ -71,14 +71,16 @@ Or, in an `.mcp.json`:
 
 ## Docker
 
-The image is production-only: TypeScript is compiled on the host and only `build/` plus the
-runtime dependencies are copied in, so devDependencies never enter the image. The server
+The Dockerfile is multi-stage. A builder stage installs all dependencies and compiles the
+TypeScript; the runtime stage starts from a clean base, installs only production
+dependencies and copies the compiled `build/` out of the builder. devDependencies and the
+sources never enter the final image, and the host needs nothing but Docker. The server
 speaks MCP over stdio, so the container is not a long-running service: the MCP client starts
 it per session with `docker run -i` and it exits when stdin closes. Do not add `-t`; a TTY
 corrupts the JSON-RPC stream.
 
 ```bash
-npm run build && docker build -t mcp-jira .
+docker build -t mcp-jira .
 ```
 
 Credentials are passed at run time and never baked into the image. The bare `-e NAME` form
@@ -116,6 +118,40 @@ Or in an `.mcp.json`:
   }
 }
 ```
+
+### Publishing to Docker Hub
+
+Docker Hub images are named `<dockerhub-user>/<repo>:<tag>`, so the local `mcp-jira` tag
+has to be re-tagged before it can be pushed. Use the version from `package.json` as the tag
+and also move `latest`:
+
+```bash
+docker login                                   # once per machine; prompts for Docker Hub credentials
+VERSION=$(node -p "require('./package.json').version")
+docker tag mcp-jira <dockerhub-user>/mcp-jira:$VERSION
+docker tag mcp-jira <dockerhub-user>/mcp-jira:latest
+docker push <dockerhub-user>/mcp-jira:$VERSION
+docker push <dockerhub-user>/mcp-jira:latest
+```
+
+`docker build` produces an image for the host's CPU architecture only. An image built on
+Apple Silicon is arm64 and will not run on an x86 machine. To publish one tag that works on
+both, build and push with buildx in a single step instead of the tag/push sequence above:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t <dockerhub-user>/mcp-jira:$VERSION -t <dockerhub-user>/mcp-jira:latest --push .
+```
+
+Once pushed, clients reference the Hub name instead of the local tag. `docker run` pulls the
+image automatically on first use, so nothing else changes:
+
+```bash
+docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN <dockerhub-user>/mcp-jira
+```
+
+Bump `version` in `package.json` before each release so every push gets a distinct tag and
+`latest` can be rolled back by re-tagging an older version.
 
 ## Text formatting
 

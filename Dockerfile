@@ -1,17 +1,28 @@
 # syntax=docker/dockerfile:1
 #
-# Production-only image. TypeScript is compiled on the host first:
+# Multi-stage build. The builder stage installs every dependency (including
+# TypeScript) and compiles src/ to build/. The runtime stage starts from a clean
+# base, installs only production dependencies, and copies the compiled output
+# out of the builder. devDependencies never reach the final image, and the host
+# needs nothing but Docker:
 #
-#   npm run build && docker build -t mcp-jira .
-#
-# Only package.json, the lockfile and the compiled build/ directory go in;
-# devDependencies (typescript, @types/node) are never installed here.
+#   docker build -t mcp-jira .
+
+# ---- builder ---------------------------------------------------------------
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.json ./
+RUN npm ci
+COPY src ./src
+RUN npm run build
+
+# ---- runtime ---------------------------------------------------------------
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-COPY build ./build
+RUN npm ci --omit=dev && npm cache clean --force && find node_modules -type d -empty -delete
+COPY --from=builder /app/build ./build
 USER node
 
 # Credentials are supplied at run time, never baked into the image:

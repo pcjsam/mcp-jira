@@ -1,9 +1,12 @@
 node_modules
-src
+build
+coverage
 .env
 .git
 .gitignore
 .dockerignore
 Dockerfile
 README.md
-tsconfig.json
+test
+jest.config.js
+tsconfig.test.json
