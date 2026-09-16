@@ -15,6 +15,7 @@ every read tool marked read-only so Claude can auto-approve it.
 | `update_ticket`  | summary, description, assignee, priority, labels (replace or add/remove), parent, due date                                                                                     | write        |
 | `move_ticket`    | transition by column / status / transition name; lists what is available when nothing matches                                                                                  | write        |
 | `add_comment`    | comment on an issue                                                                                                                                                            | write        |
+| `link_tickets`   | link two issues ("blocks", "is blocked by", "relates to", any site link type); direction resolved from the phrase                                                              | write        |
 | `delete_ticket`  | permanent delete, optional sub-tasks                                                                                                                                           | destructive  |
 
 `search_tickets` answers the "assigned to X per board" question with `board_id` + `assignee`, and
@@ -209,5 +210,9 @@ Jest load native ESM.
 - "Move within a board" means a workflow transition. Jira only offers the transitions valid
   from the current status, so `move_ticket` reads them first and reports them on a miss.
   Re-ordering cards (rank) is a separate Agile endpoint and is not exposed yet.
+- Issue links (`link_tickets`) are a separate resource from issue fields: `POST /rest/api/3/issueLink`
+  with an `outwardIssue` / `inwardIssue` pair. The tool reads `GET /issueLinkType` first so a phrase
+  like "is blocked by" is mapped to the right type and direction. The parent / epic hierarchy is a
+  plain field and stays in `update_ticket`.
 - Assignee resolution: `me` → `/myself`, raw accountIds pass through, anything else goes to
   `/user/search` and must resolve to exactly one active user (exact email or name breaks ties).

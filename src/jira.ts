@@ -70,6 +70,16 @@ export interface Issue {
   fields: Record<string, any>;
 }
 
+/** An issue link type as Jira defines it: the name plus the phrases for each direction. */
+export interface IssueLinkType {
+  id: string;
+  name: string;
+  /** Phrase seen from the outward issue, e.g. "blocks". */
+  outward: string;
+  /** Phrase seen from the inward issue, e.g. "is blocked by". */
+  inward: string;
+}
+
 export interface SearchPage {
   issues: Issue[];
   total?: number;
@@ -277,6 +287,25 @@ export class JiraClient {
 
   addComment(key: string, body: unknown): Promise<{ id: string; created: string }> {
     return this.request("POST", `/rest/api/3/issue/${key}/comment`, { body: { body } });
+  }
+
+  // ---- issue links -----------------------------------------------------------
+
+  async getIssueLinkTypes(): Promise<IssueLinkType[]> {
+    const res = await this.request<{ issueLinkTypes: IssueLinkType[] }>("GET", "/rest/api/3/issueLinkType");
+    return res.issueLinkTypes;
+  }
+
+  /** Create a link; `outward` is the issue the link is read from (for "Blocks", the blocker). */
+  linkIssues(typeName: string, outward: string, inward: string, comment?: unknown): Promise<void> {
+    return this.request("POST", "/rest/api/3/issueLink", {
+      body: {
+        type: { name: typeName },
+        outwardIssue: { key: outward },
+        inwardIssue: { key: inward },
+        ...(comment ? { comment: { body: comment } } : {}),
+      },
+    });
   }
 
   async getProjectIssueTypes(projectKey: string): Promise<string[]> {

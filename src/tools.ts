@@ -3,6 +3,7 @@ import * as z from "zod";
 import { textToAdf } from "./adf.js";
 import { DETAIL_FIELDS, LIST_FIELDS, issueDetail, issueRow } from "./format.js";
 import { JiraClient, JiraError, type Transition } from "./jira.js";
+import { describeLinkTypes, resolveLink } from "./links.js";
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
 
@@ -361,6 +362,39 @@ export function registerTools(server: McpServer, jira: JiraClient) {
     guard(async ({ key, body }) => {
       const c = await jira.addComment(key, textToAdf(body));
       return ok({ key, comment_id: c.id, created: c.created, url: `${jira.browseUrl(key)}?focusedCommentId=${c.id}` });
+    }),
+  );
+
+  server.registerTool(
+    "link_tickets",
+    {
+      title: "Link tickets",
+      description:
+        "Link two issues, read as \"`from` <relation> `to`\": e.g. from=PROJ-1, relation=\"blocks\", to=PROJ-2 makes PROJ-1 block PROJ-2. " +
+        "relation is a link type name (\"Blocks\", \"Relates\", \"Duplicate\", \"Cloners\" or a custom one) or either of its phrases " +
+        "(\"blocks\" / \"is blocked by\", \"relates to\", \"duplicates\" / \"is duplicated by\"), case-insensitive; a bare type name reads in its outward direction. " +
+        "Fails listing the site's link types when nothing matches. This is not the parent/epic hierarchy; use update_ticket's parent_key for that.",
+      inputSchema: z.object({
+        from: ISSUE_KEY.describe("Issue the relation is read from, e.g. the blocker."),
+        relation: z.string().min(1).describe('Link type name or directional phrase, e.g. "blocks", "is blocked by", "relates to".'),
+        to: ISSUE_KEY.describe("Issue the relation points at, e.g. the one being blocked."),
+        comment: z.string().optional().describe("Comment to add to `from` along with the link."),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    guard(async ({ from, relation, to, comment }) => {
+      if (from === to) return fail("Cannot link an issue to itself.");
+      const types = await jira.getIssueLinkTypes();
+      const link = resolveLink(types, relation, from, to);
+      if (!link) return fail(`No link type matches "${relation}". Available (outward / inward):\n${describeLinkTypes(types)}`);
+      await jira.linkIssues(link.type.name, link.outward, link.inward, comment ? textToAdf(comment) : undefined);
+      return ok({
+        link: `${link.outward} ${link.type.outward} ${link.inward}`,
+        type: link.type.name,
+        from: link.outward,
+        to: link.inward,
+        url: jira.browseUrl(from),
+      });
     }),
   );
 
