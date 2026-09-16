@@ -1,10 +1,10 @@
 {
-  "name": "mcp-jira",
+  "name": "mcp-jira-user",
   "version": "1.0.0",
   "type": "module",
   "main": "build/index.js",
   "bin": {
-    "mcp-jira": "./build/index.js"
+    "mcp-jira-user": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",

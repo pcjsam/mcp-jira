@@ -6,7 +6,7 @@
 # out of the builder. devDependencies never reach the final image, and the host
 # needs nothing but Docker:
 #
-#   docker build -t mcp-jira .
+#   docker build -t mcp-jira-user .
 
 # ---- builder ---------------------------------------------------------------
 FROM node:22-alpine AS builder

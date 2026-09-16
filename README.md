@@ -1,21 +1,21 @@
-# mcp-jira
+# mcp-jira-user
 
 A small Jira Cloud MCP server tailored to how Reach Collective works: boards first, then the
 tickets on them. Ten tools, plain-text in and out (Jira's ADF is converted at the edge), and
 every read tool marked read-only so Claude can auto-approve it.
 
-| Tool | Does | Side effects |
-|---|---|---|
-| `list_boards` | boards with id, type and anchored project; filter by name / project / type | read-only |
-| `get_board` | one board: columns → statuses, project key, active/future sprints | read-only |
-| `search_tickets` | issues on one board (`board_id`) or site-wide; filters for assignee (`me`, email, name, `unassigned`), status / category, text, type, `updated_since`, plus raw JQL; paginated | read-only |
-| `get_ticket` | full issue: description as text, subtasks, links, newest comments | read-only |
-| `find_users` | name / email → accountId, for the rare ambiguous name | read-only |
-| `create_ticket` | new issue in a board's project (or an explicit `project_key`) | write |
-| `update_ticket` | summary, description, assignee, priority, labels (replace or add/remove), parent, due date | write |
-| `move_ticket` | transition by column / status / transition name; lists what is available when nothing matches | write |
-| `add_comment` | comment on an issue | write |
-| `delete_ticket` | permanent delete, optional sub-tasks | destructive |
+| Tool             | Does                                                                                                                                                                           | Side effects |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| `list_boards`    | boards with id, type and anchored project; filter by name / project / type                                                                                                     | read-only    |
+| `get_board`      | one board: columns → statuses, project key, active/future sprints                                                                                                              | read-only    |
+| `search_tickets` | issues on one board (`board_id`) or site-wide; filters for assignee (`me`, email, name, `unassigned`), status / category, text, type, `updated_since`, plus raw JQL; paginated | read-only    |
+| `get_ticket`     | full issue: description as text, subtasks, links, newest comments                                                                                                              | read-only    |
+| `find_users`     | name / email → accountId, for the rare ambiguous name                                                                                                                          | read-only    |
+| `create_ticket`  | new issue in a board's project (or an explicit `project_key`)                                                                                                                  | write        |
+| `update_ticket`  | summary, description, assignee, priority, labels (replace or add/remove), parent, due date                                                                                     | write        |
+| `move_ticket`    | transition by column / status / transition name; lists what is available when nothing matches                                                                                  | write        |
+| `add_comment`    | comment on an issue                                                                                                                                                            | write        |
+| `delete_ticket`  | permanent delete, optional sub-tasks                                                                                                                                           | destructive  |
 
 `search_tickets` answers the "assigned to X per board" question with `board_id` + `assignee`, and
 the cross-board version by dropping `board_id`. Both go through the same tool so Claude only has
@@ -24,7 +24,6 @@ to learn one.
 ## Setup
 
 ```bash
-cd ~/www/sam/mcp-jira
 npm install
 npm run build          # → build/index.js
 ```
@@ -45,7 +44,7 @@ claude mcp add --scope user jira \
   -e JIRA_BASE_URL=https://<site>.atlassian.net \
   -e JIRA_EMAIL=you@example.com \
   -e JIRA_API_TOKEN=... \
-  -- node /Users/sam/www/sam/mcp-jira/build/index.js
+  -- node /Users/sam/www/sam/mcp-jira-user/build/index.js
 ```
 
 Or, in an `.mcp.json`:
@@ -56,7 +55,7 @@ Or, in an `.mcp.json`:
     "jira": {
       "type": "stdio",
       "command": "node",
-      "args": ["/Users/sam/www/sam/mcp-jira/build/index.js"],
+      "args": ["/Users/sam/www/sam/mcp-jira-user/build/index.js"],
       "env": {
         "JIRA_BASE_URL": "https://<site>.atlassian.net",
         "JIRA_EMAIL": "${JIRA_EMAIL}",
@@ -80,14 +79,14 @@ it per session with `docker run -i` and it exits when stdin closes. Do not add `
 corrupts the JSON-RPC stream.
 
 ```bash
-docker build -t mcp-jira .
+docker build -t mcp-jira-user .
 ```
 
 Credentials are passed at run time and never baked into the image. The bare `-e NAME` form
 forwards the variable from your shell without putting the token on the command line:
 
 ```bash
-docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN mcp-jira
+docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN mcp-jira-user
 ```
 
 Register the container with Claude Code:
@@ -97,7 +96,7 @@ claude mcp add --scope user jira \
   -e JIRA_BASE_URL=https://<site>.atlassian.net \
   -e JIRA_EMAIL=you@example.com \
   -e JIRA_API_TOKEN=... \
-  -- docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN mcp-jira
+  -- docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN mcp-jira-user
 ```
 
 Or in an `.mcp.json`:
@@ -108,7 +107,18 @@ Or in an `.mcp.json`:
     "jira": {
       "type": "stdio",
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-e", "JIRA_BASE_URL", "-e", "JIRA_EMAIL", "-e", "JIRA_API_TOKEN", "mcp-jira"],
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "JIRA_BASE_URL",
+        "-e",
+        "JIRA_EMAIL",
+        "-e",
+        "JIRA_API_TOKEN",
+        "mcp-jira-user"
+      ],
       "env": {
         "JIRA_BASE_URL": "https://<site>.atlassian.net",
         "JIRA_EMAIL": "${JIRA_EMAIL}",
@@ -121,17 +131,17 @@ Or in an `.mcp.json`:
 
 ### Publishing to Docker Hub
 
-Docker Hub images are named `<dockerhub-user>/<repo>:<tag>`, so the local `mcp-jira` tag
+Docker Hub images are named `<dockerhub-user>/<repo>:<tag>`, so the local `mcp-jira-user` tag
 has to be re-tagged before it can be pushed. Use the version from `package.json` as the tag
 and also move `latest`:
 
 ```bash
 docker login                                   # once per machine; prompts for Docker Hub credentials
 VERSION=$(node -p "require('./package.json').version")
-docker tag mcp-jira <dockerhub-user>/mcp-jira:$VERSION
-docker tag mcp-jira <dockerhub-user>/mcp-jira:latest
-docker push <dockerhub-user>/mcp-jira:$VERSION
-docker push <dockerhub-user>/mcp-jira:latest
+docker tag mcp-jira-user <dockerhub-user>/mcp-jira-user:$VERSION
+docker tag mcp-jira-user <dockerhub-user>/mcp-jira-user:latest
+docker push <dockerhub-user>/mcp-jira-user:$VERSION
+docker push <dockerhub-user>/mcp-jira-user:latest
 ```
 
 `docker build` produces an image for the host's CPU architecture only. An image built on
@@ -140,14 +150,14 @@ both, build and push with buildx in a single step instead of the tag/push sequen
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t <dockerhub-user>/mcp-jira:$VERSION -t <dockerhub-user>/mcp-jira:latest --push .
+  -t <dockerhub-user>/mcp-jira-user:$VERSION -t <dockerhub-user>/mcp-jira-user:latest --push .
 ```
 
 Once pushed, clients reference the Hub name instead of the local tag. `docker run` pulls the
 image automatically on first use, so nothing else changes:
 
 ```bash
-docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN <dockerhub-user>/mcp-jira
+docker run -i --rm -e JIRA_BASE_URL -e JIRA_EMAIL -e JIRA_API_TOKEN <dockerhub-user>/mcp-jira-user
 ```
 
 Bump `version` in `package.json` before each release so every push gets a distinct tag and
@@ -156,8 +166,8 @@ Bump `version` in `package.json` before each release so every push gets a distin
 ## Text formatting
 
 Descriptions and comments are written as plain text with light markdown, converted to ADF:
-blank lines separate paragraphs, `- ` / `1. ` start lists, `# ` headings, ``` fences become code
-blocks, `` `code` `` spans and bare URLs are marked up. Reading goes the other way, including
+blank lines separate paragraphs, `- ` / `1. ` start lists, `# ` headings, ``fences become code
+blocks,` `code` `` spans and bare URLs are marked up. Reading goes the other way, including
 mentions, tables and nested lists.
 
 ## Layout

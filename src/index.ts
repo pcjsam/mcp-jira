@@ -9,7 +9,7 @@ function requireEnv(name: string): string {
   if (!v) {
     // stderr only: stdout is the MCP wire.
     console.error(
-      `mcp-jira: missing ${name}. Set JIRA_BASE_URL (https://<site>.atlassian.net), JIRA_EMAIL and JIRA_API_TOKEN ` +
+      `mcp-jira-user: missing ${name}. Set JIRA_BASE_URL (https://<site>.atlassian.net), JIRA_EMAIL and JIRA_API_TOKEN ` +
         `(create one at https://id.atlassian.com/manage-profile/security/api-tokens).`,
     );
     process.exit(1);
@@ -24,7 +24,7 @@ const jira = new JiraClient({
 });
 
 const server = new McpServer(
-  { name: "mcp-jira", version: "1.0.0" },
+  { name: "mcp-jira-user", version: "1.0.0" },
   {
     instructions:
       "Jira Cloud for this team. Start from list_boards to get board ids; search_tickets with board_id scopes to a board, " +
